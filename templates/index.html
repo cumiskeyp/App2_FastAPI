@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phase 6 – App 2: Analytics Dashboard</title>
+<style>
+  :root {
+    --bg:#0e1117; --surface:#1a1d27; --surface2:#262730;
+    --border:#333647; --accent:#ff4b4b; --accent2:#4c8bf5;
+    --text:#fafafa; --muted:#a0a0b0; --green:#21c55d; --red:#ff4b4b;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:"Source Sans Pro",sans-serif;
+       display:flex;min-height:100vh;font-size:15px;}
+
+  /* Sidebar */
+  .sidebar{width:270px;min-width:270px;background:var(--surface);
+           border-right:1px solid var(--border);padding:24px 16px;overflow-y:auto;}
+  .sidebar h2{font-size:13px;color:var(--muted);text-transform:uppercase;
+              letter-spacing:.08em;margin-bottom:18px;}
+  .sidebar label{display:block;font-size:12px;color:var(--muted);margin-bottom:3px;margin-top:14px;}
+  .sidebar select{width:100%;background:var(--surface2);color:var(--text);
+                  border:1px solid var(--border);border-radius:6px;
+                  padding:7px 10px;font-size:13px;}
+  .radio-group{display:flex;flex-direction:column;gap:7px;margin-top:5px;}
+  .radio-group label{display:flex;align-items:center;gap:7px;font-size:12px;
+                     color:var(--text);margin:0;cursor:pointer;}
+  .radio-group input[type=radio]{accent-color:var(--accent);}
+  input[type=range]{width:100%;accent-color:var(--accent);margin-top:5px;}
+  .frac-val{font-size:12px;color:var(--accent);font-weight:600;text-align:center;margin-top:3px;}
+  .ticker-checks{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}
+  .ticker-checks label{background:var(--surface2);border:1px solid var(--border);
+                        border-radius:20px;padding:3px 10px;font-size:12px;
+                        cursor:pointer;display:flex;align-items:center;gap:5px;}
+  .ticker-checks input{accent-color:var(--accent);}
+  .divider{border:none;border-top:1px solid var(--border);margin:18px 0;}
+  .sidebar-note{font-size:11px;color:var(--muted);margin-top:5px;}
+
+  /* Main */
+  .main{flex:1;padding:28px 32px;overflow-y:auto;}
+  h1{font-size:26px;font-weight:700;margin-bottom:4px;}
+  .caption{color:var(--muted);font-size:13px;margin-bottom:20px;}
+
+  /* Upload */
+  .upload-zone{border:2px dashed var(--border);border-radius:10px;
+               padding:28px;text-align:center;margin-bottom:14px;cursor:pointer;}
+  .upload-zone:hover{border-color:var(--accent2);}
+  .upload-text{font-size:14px;color:var(--muted);}
+  .upload-text span{color:var(--accent2);}
+  #file-name{margin-top:8px;font-size:13px;color:var(--green);}
+
+  /* Button */
+  .btn{background:var(--accent);color:white;border:none;border-radius:8px;
+       padding:10px 26px;font-size:14px;font-weight:600;cursor:pointer;transition:opacity .2s;}
+  .btn:hover{opacity:.85;}
+
+  /* Alerts */
+  .alert{border-radius:8px;padding:11px 15px;font-size:13px;margin-bottom:14px;}
+  .alert-success{background:#1a3a2a;border:1px solid #2d6a4a;color:#52c98a;}
+  .alert-error  {background:#3a1a1a;border:1px solid #6a2d2d;color:#ff7070;}
+  .alert-info   {background:#1a2a3a;border:1px solid #2d4a6a;color:#7ab3f5;}
+  .alert-warn   {background:#3a3010;border:1px solid #6a5820;color:#f5c842;}
+
+  /* Tabs */
+  .tab-nav{display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:24px;}
+  .tab-btn{background:none;border:none;color:var(--muted);padding:10px 20px;
+           font-size:14px;cursor:pointer;border-bottom:2px solid transparent;
+           margin-bottom:-2px;transition:color .2s;}
+  .tab-btn.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:600;}
+  .tab-content{display:none;}
+  .tab-content.active{display:block;}
+
+  /* KPI */
+  .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:20px 0;}
+  .kpi-card{background:var(--surface);border:1px solid var(--border);
+            border-radius:10px;padding:14px 18px;}
+  .kpi-label{font-size:11px;color:var(--muted);margin-bottom:5px;}
+  .kpi-value{font-size:26px;font-weight:700;}
+  .kpi-delta{font-size:12px;margin-top:3px;}
+  .positive{color:var(--green);}
+  .negative{color:var(--red);}
+
+  /* Charts */
+  .chart-row{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:16px 0;}
+  .chart-row.single{grid-template-columns:1fr;}
+  .chart-card{background:var(--surface);border:1px solid var(--border);
+              border-radius:10px;padding:18px;}
+  .chart-card img{width:100%;border-radius:6px;}
+
+  /* Tables */
+  .section-title{font-size:17px;font-weight:600;margin:22px 0 10px;}
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th{background:var(--surface2);color:var(--muted);padding:9px 13px;
+     text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.06em;}
+  td{padding:8px 13px;border-bottom:1px solid var(--border);}
+  tr:hover td{background:var(--surface2);}
+  .table-wrap{background:var(--surface);border:1px solid var(--border);
+              border-radius:10px;overflow:hidden;margin-bottom:18px;}
+  .pred-wrap{max-height:280px;overflow-y:auto;}
+
+  /* Sentiment cards */
+  .sent-cards{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin:14px 0;}
+  .sent-card{background:var(--surface);border:1px solid var(--border);
+             border-radius:10px;padding:14px;text-align:center;}
+  .sent-ticker{font-size:11px;color:var(--muted);margin-bottom:4px;}
+  .sent-signal{font-size:16px;font-weight:700;margin-bottom:4px;}
+  .sent-score{font-size:13px;}
+
+  /* Ref table highlight */
+  .best-row td{background:#1a3a2a!important;color:#52c98a;}
+
+  details{background:var(--surface);border:1px solid var(--border);
+          border-radius:8px;padding:11px 15px;margin-top:14px;}
+  summary{cursor:pointer;font-size:13px;color:var(--muted);}
+  .feat-list{margin-top:8px;font-size:12px;font-family:monospace;line-height:1.8;}
+  hr{border:none;border-top:1px solid var(--border);margin:20px 0;}
+</style>
+</head>
+<body>
+
+<!-- ── Sidebar ── -->
+<aside class="sidebar">
+  <h2>⚙️ Configuration</h2>
+  <form id="main-form" method="POST" action="/analyse" enctype="multipart/form-data">
+
+    <label>Model</label>
+    <select name="model_choice">
+      {% for m in models %}
+      <option value="{{ m }}" {% if m == selected_model %}selected{% endif %}>{{ m }}</option>
+      {% endfor %}
+    </select>
+
+    <label style="margin-top:16px">Feature Set</label>
+    <div class="radio-group">
+      <label><input type="radio" name="feature_mode" value="groomed"
+        {% if not selected_feature or selected_feature=='groomed' %}checked{% endif %}>
+        Groomed (adosc_t1 only)</label>
+      <label><input type="radio" name="feature_mode" value="full"
+        {% if selected_feature=='full' %}checked{% endif %}>
+        Full feature set</label>
+    </div>
+
+    <label style="margin-top:16px">Train fraction</label>
+    <input type="range" name="train_frac" min="0.60" max="0.90" step="0.05"
+           value="{{ selected_frac or 0.80 }}"
+           oninput="document.getElementById('fv').textContent=parseFloat(this.value).toFixed(2)">
+    <div class="frac-val" id="fv">{{ "%.2f"|format(selected_frac or 0.80) }}</div>
+
+    <label style="margin-top:16px">Filter by Ticker</label>
+    <div class="ticker-checks">
+      {% for t in tickers %}
+      <label>
+        <input type="checkbox" name="ticker_filter" value="{{ t }}"
+               {% if not selected_tickers or t in selected_tickers %}checked{% endif %}>
+        {{ t }}
+      </label>
+      {% endfor %}
+    </div>
+
+    <hr class="divider">
+    <div style="font-size:11px;color:var(--muted)"><strong>Tabs</strong></div>
+    <div class="sidebar-note">① EDA &nbsp; ② Sentiment &nbsp; ③ Predictions</div>
+
+    <input type="file" name="file" id="file_input" accept=".csv" style="display:none"
+           onchange="showFile(this)">
+  </form>
+</aside>
+
+<!-- ── Main ── -->
+<main class="main">
+  <h1>🚀 Phase 6 – App 2: Financial Market Analytics Dashboard</h1>
+  <p class="caption">S&P 500 Tech-5 · Open-Gap Direction Predictor · EDA · Sentiment · Predictions</p>
+
+  {% if error %}
+  <div class="alert alert-error">❌ {{ error }}</div>
+  {% endif %}
+
+  <!-- Upload -->
+  <div class="upload-zone" onclick="document.getElementById('file_input').click()">
+    <div style="font-size:28px;margin-bottom:6px">☁️</div>
+    <div class="upload-text">Drag and drop file here · <span>Browse files</span> · CSV only</div>
+    <div id="file-name">{% if eda %}✅ File loaded — {{ eda.rows_raw }} rows × {{ eda.cols }} columns{% endif %}</div>
+  </div>
+
+  {% if eda %}
+  <div class="alert alert-success">
+    ✅ Loaded {{ eda.rows_raw }} rows × {{ eda.cols }} columns
+    {% if eda.rows_filtered != eda.rows_raw %}
+    · Filtered to {{ eda.rows_filtered }} rows
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <button class="btn" onclick="submitForm()">🚀 Analyse</button>
+
+  {% if eda %}
+  <hr>
+
+  <!-- Tab navigation -->
+  <div class="tab-nav">
+    <button class="tab-btn active" onclick="showTab('eda',this)">📊 Exploratory Data Analysis</button>
+    <button class="tab-btn" onclick="showTab('sent',this)">🗞️ Sentiment Analysis</button>
+    <button class="tab-btn" onclick="showTab('pred',this)">🤖 Model Predictions</button>
+  </div>
+
+  <!-- ══════════ TAB 1: EDA ══════════ -->
+  <div id="tab-eda" class="tab-content active">
+    <h2 style="font-size:20px;margin-bottom:16px">Exploratory Data Analysis</h2>
+
+    <div class="section-title">Descriptive Statistics (first 8 features)</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Feature</th><th>Count</th><th>Mean</th><th>Std</th><th>Min</th><th>Max</th>
+        </tr></thead>
+        <tbody>
+          {% for r in eda.desc_rows %}
+          <tr><td><strong>{{ r.col }}</strong></td>
+              <td>{{ r.count }}</td><td>{{ r.mean }}</td>
+              <td>{{ r.std }}</td><td>{{ r.min }}</td><td>{{ r.max }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="chart-row">
+      <div class="chart-card">
+        <div style="font-size:14px;font-weight:600;margin-bottom:10px">Close Price History</div>
+        <img src="data:image/png;base64,{{ eda.price_img }}" alt="Price History">
+      </div>
+      <div class="chart-card">
+        <div style="font-size:14px;font-weight:600;margin-bottom:10px">Returns & Class Balance</div>
+        <img src="data:image/png;base64,{{ eda.returns_img }}" alt="Returns">
+      </div>
+    </div>
+
+    <div class="chart-row single">
+      <div class="chart-card">
+        <div style="font-size:14px;font-weight:600;margin-bottom:10px">RSI & ADX Indicators</div>
+        <img src="data:image/png;base64,{{ eda.rsi_img }}" alt="RSI ADX">
+      </div>
+    </div>
+
+    <div class="chart-row">
+      <div class="chart-card">
+        <div style="font-size:14px;font-weight:600;margin-bottom:10px">Realised Volatility</div>
+        <img src="data:image/png;base64,{{ eda.vol_img }}" alt="Volatility">
+      </div>
+      <div class="chart-card">
+        <div style="font-size:14px;font-weight:600;margin-bottom:10px">Feature Correlation Matrix</div>
+        <img src="data:image/png;base64,{{ eda.corr_img }}" alt="Correlation">
+      </div>
+    </div>
+
+    <div class="section-title">Target Distribution</div>
+    <div class="kpi-row" style="grid-template-columns:1fr 1fr;max-width:400px">
+      <div class="kpi-card">
+        <div class="kpi-label">Up days (1)</div>
+        <div class="kpi-value positive">{{ eda.up_pct }}%</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Down days (0)</div>
+        <div class="kpi-value negative">{{ eda.dn_pct }}%</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ TAB 2: SENTIMENT ══════════ -->
+  <div id="tab-sent" class="tab-content">
+    <h2 style="font-size:20px;margin-bottom:6px">🗞️ Financial Sentiment Analysis — FinBERT Results</h2>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:20px">
+      Scored by <code>mrm8488/distilroberta-finetuned-financial-news-sentiment-analysis</code>.
+      Results from live yfinance headlines scraped on <strong>2026-09-26</strong>.
+    </p>
+
+    <div class="section-title">Signal Summary</div>
+    <div class="sent-cards">
+      {% for ticker, info in sent.data.items() %}
+      <div class="sent-card">
+        <div class="sent-ticker">
+          {% if info.score > 0 %}🟢{% elif info.score < 0 %}🔴{% else %}🟡{% endif %}
+          {{ ticker }}
+        </div>
+        <div class="sent-signal"
+             style="color:{% if info.score>0 %}var(--green){% elif info.score<0 %}var(--red){% else %}var(--muted){% endif %}">
+          {{ info.signal }}
+        </div>
+        <div class="sent-score" style="color:var(--muted)">Net: {{ info.score }}%</div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <hr>
+    <div class="chart-row">
+      <div class="chart-card">
+        <div style="font-size:14px;font-weight:600;margin-bottom:10px">Sentiment Distribution by Ticker</div>
+        <img src="data:image/png;base64,{{ sent.bar_img }}" alt="Sentiment Bar">
+      </div>
+      <div class="chart-card">
+        <div style="font-size:14px;font-weight:600;margin-bottom:10px">Net Sentiment Score</div>
+        <img src="data:image/png;base64,{{ sent.net_img }}" alt="Net Sentiment">
+      </div>
+    </div>
+
+    <div class="section-title">Confidence Statistics</div>
+    <div class="alert alert-info">
+      Cached results from <strong>2026-09-26</strong> (106 headlines, 94% high-confidence).
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Ticker</th><th>Positive %</th><th>Neutral %</th><th>Negative %</th><th>Net Score</th>
+        </tr></thead>
+        <tbody>
+          {% for ticker, info in sent.data.items() %}
+          <tr>
+            <td><strong>{{ ticker }}</strong></td>
+            <td>{{ info.Positive }}</td>
+            <td>{{ info.Neutral }}</td>
+            <td>{{ info.Negative }}</td>
+            <td class="{% if info.score>0 %}positive{% else %}negative{% endif %}">
+              {{ info.score }}%
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section-title">Interpretation</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Signal</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Bullish ↑</strong></td><td>Positive headlines > Negative by >10 pp</td></tr>
+          <tr><td><strong>Neutral →</strong></td><td>Balanced sentiment — no clear directional bias</td></tr>
+          <tr><td><strong>Bearish ↓</strong></td><td>Negative headlines > Positive by >10 pp</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ══════════ TAB 3: PREDICTIONS ══════════ -->
+  <div id="tab-pred" class="tab-content">
+    {% if pred %}
+    <h2 style="font-size:20px;margin-bottom:6px">🤖 Model Predictions</h2>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:20px">
+      <strong>Model:</strong> <code>{{ pred.model }}</code> ·
+      <strong>Train/Test split:</strong> {{ (selected_frac * 100)|int }}% / {{ ((1-selected_frac)*100)|int }}% (chronological)
+    </p>
+
+    <div class="kpi-row">
+      <div class="kpi-card">
+        <div class="kpi-label">Train AUC</div>
+        <div class="kpi-value">{{ pred.auc_tr }}</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Test AUC</div>
+        <div class="kpi-value">{{ pred.auc_te }}</div>
+        <div class="kpi-delta {{ pred.delta_class }}">{{ pred.delta }} vs train</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Train rows</div>
+        <div class="kpi-value">{{ pred.n_train }}</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Test rows</div>
+        <div class="kpi-value">{{ pred.n_test }}</div>
+      </div>
+    </div>
+
+    {% if pred.auc_level == 'high' %}
+    <div class="alert alert-success">✅ Test AUC {{ pred.auc_te }} &gt; 0.55 — meaningfully above chance</div>
+    {% elif pred.auc_level == 'ok' %}
+    <div class="alert alert-info">ℹ️ Test AUC {{ pred.auc_te }} — slight edge above random (0.50)</div>
+    {% else %}
+    <div class="alert alert-warn">⚠️ Test AUC {{ pred.auc_te }} — at or below chance</div>
+    {% endif %}
+
+    <div class="chart-row">
+      <div class="chart-card">
+        <div style="font-size:14px;font-weight:600;margin-bottom:10px">ROC Curve</div>
+        <img src="data:image/png;base64,{{ pred.roc_img }}" alt="ROC">
+      </div>
+      <div class="chart-card">
+        <div style="font-size:14px;font-weight:600;margin-bottom:10px">Confusion Matrix</div>
+        <img src="data:image/png;base64,{{ pred.cm_img }}" alt="CM">
+      </div>
+    </div>
+
+    <div class="section-title">Classification Report</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th></th><th>Precision</th><th>Recall</th><th>F1-Score</th><th>Support</th>
+        </tr></thead>
+        <tbody>
+          {% for row in pred.rep_rows %}
+          <tr><td><strong>{{ row.label }}</strong></td>
+              <td>{{ row.precision }}</td><td>{{ row.recall }}</td>
+              <td>{{ row.f1 }}</td><td>{{ row.support }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section-title">Test-Set Prediction Table (first 50 rows)</div>
+    <div class="table-wrap pred-wrap">
+      <table>
+        <thead><tr>
+          <th>#</th><th>Actual</th><th>Prob Up</th><th>Predicted</th><th>Correct</th>
+        </tr></thead>
+        <tbody>
+          {% for i, row in pred.pred_table|enumerate %}
+          <tr>
+            <td>{{ i }}</td><td>{{ row.actual }}</td>
+            <td>{{ row.prob_up }}</td><td>{{ row.predicted }}</td>
+            <td>{% if row.correct %}
+                <span style="color:var(--green)">✓</span>
+                {% else %}<span style="color:var(--red)">✗</span>{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="chart-row single">
+      <div class="chart-card">
+        <div style="font-size:14px;font-weight:600;margin-bottom:10px">Distribution of Predicted Probabilities</div>
+        <img src="data:image/png;base64,{{ pred.prob_img }}" alt="Prob Hist">
+      </div>
+    </div>
+
+    <details>
+      <summary>Features used ({{ pred.feat_names|length }})</summary>
+      <div class="feat-list">{{ pred.feat_names|join(", ") }}</div>
+    </details>
+
+    <div class="section-title">📌 Project Reference Results</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Model</th>
+          <th>Train AUC (Groomed)</th><th>Test AUC (Groomed)</th>
+          <th>Train AUC (Full)</th><th>Test AUC (Full)</th>
+        </tr></thead>
+        <tbody>
+          {% for row in [
+            ["Naive Bayes",       "0.51","0.58","0.52","0.56"],
+            ["Decision Tree",     "0.73","0.46","0.74","0.47"],
+            ["Random Forest",     "0.92","0.50","0.93","0.51"],
+            ["Gradient Boosting", "0.68","0.48","0.69","0.49"],
+            ["XGBoost",           "0.88","0.49","0.89","0.50"],
+            ["SVM",               "0.54","0.54","0.55","0.53"],
+          ] %}
+          <tr {% if row[0]=="Naive Bayes" %}class="best-row"{% endif %}>
+            <td><strong>{{ row[0] }}</strong></td>
+            <td>{{ row[1] }}</td><td>{{ row[2] }}</td>
+            <td>{{ row[3] }}</td><td>{{ row[4] }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-top:8px">
+      ✅ <strong>Naive Bayes</strong> is the only model where Test AUC &gt; Train AUC.
+      Primary t-test: t=8.01, p=0.0013, 95% CI (0.513, 0.528).
+    </p>
+    {% endif %}
+  </div>
+
+  {% else %}
+  <div class="alert alert-info" style="margin-top:20px">
+    👆 Upload a CSV file and click <strong>Analyse</strong> to populate all dashboard panels.
+  </div>
+  {% endif %}
+</main>
+
+<script>
+  function showFile(input) {
+    const el = document.getElementById('file-name');
+    el.textContent = input.files[0] ? '📄 ' + input.files[0].name : '';
+  }
+  const zone = document.querySelector('.upload-zone');
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.style.borderColor='#4c8bf5'; });
+  zone.addEventListener('dragleave', () => { zone.style.borderColor=''; });
+  zone.addEventListener('drop', e => {
+    e.preventDefault(); zone.style.borderColor='';
+    const dt = e.dataTransfer;
+    if (dt.files.length) {
+      const fi = document.getElementById('file_input');
+      fi.files = dt.files; showFile(fi);
+    }
+  });
+  function submitForm() {
+    const fi = document.getElementById('file_input');
+    if (!fi.files.length) { alert('Please select a CSV file first.'); return; }
+    document.getElementById('main-form').submit();
+  }
+  function showTab(name, btn) {
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-'+name).classList.add('active');
+    btn.classList.add('active');
+  }
+  // Restore active tab after form submit
+  const params = new URLSearchParams(window.location.search);
+  const activeTab = params.get('tab');
+  if (activeTab) {
+    const btn = document.querySelector(`[onclick="showTab('${activeTab}',this)"]`);
+    if (btn) showTab(activeTab, btn);
+  }
+</script>
+</body>
+</html>
